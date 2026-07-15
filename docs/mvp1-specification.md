@@ -523,11 +523,19 @@ l'import.
 
 ## 13. Interface et design
 
+La [spécification UI MVP1](./ui-design.md) définit la direction visuelle, la
+structure de fenêtre et les comportements d'interface obligatoires.
+
 ### 13.1 Principes
 
-- Design soigné, cohérent et orienté desktop.
+- Material Design 3 flat adapté au desktop, sans reproduire strictement une
+  application Google.
+- Surfaces pleines, couleurs tonales et ombres rares.
+- Aucun gradient décoratif ni glassmorphism.
 - Vue kanban simple par défaut.
 - Panneau d'automatisation guidé.
+- Densité confortable.
+- Navigation latérale gauche rétractable et panneau droit contextuel.
 - Complexité révélée progressivement.
 - Les options shell, regex, JSONPath et permissions restent accessibles dans
   des sections avancées, sans créer un mode utilisateur irréversible.
