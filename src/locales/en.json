@@ -1,0 +1,20 @@
+{
+  "nav": {
+    "boards": "Boards",
+    "sources": "Sources",
+    "automations": "Automations",
+    "history": "History"
+  },
+  "app": {
+    "search": "Search…",
+    "newTask": "New task",
+    "theme": "Theme",
+    "language": "Language"
+  },
+  "empty": {
+    "eyebrow": "First workspace",
+    "title": "Organize work your way",
+    "description": "Create a local board, adapt its columns, then automate transitions when you are ready.",
+    "action": "Create a board"
+  }
+}

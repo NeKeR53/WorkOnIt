@@ -1,0 +1,20 @@
+{
+  "nav": {
+    "boards": "Kanbans",
+    "sources": "Sources",
+    "automations": "Automatisations",
+    "history": "Historique"
+  },
+  "app": {
+    "search": "Rechercher…",
+    "newTask": "Nouvelle tâche",
+    "theme": "Thème",
+    "language": "Langue"
+  },
+  "empty": {
+    "eyebrow": "Premier espace",
+    "title": "Organisez le travail à votre façon",
+    "description": "Créez un kanban local, adaptez ses colonnes puis automatisez vos transitions quand vous êtes prêt.",
+    "action": "Créer un kanban"
+  }
+}

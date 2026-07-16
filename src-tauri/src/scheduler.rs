@@ -3,6 +3,7 @@ use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -25,6 +26,49 @@ pub enum ScheduleSpec {
         expression: String,
         timezone: String,
     },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TriggerDefinition {
+    pub id: String,
+    pub source_id: String,
+    pub schedule: Option<ScheduleSpec>,
+    pub enabled: bool,
+    pub catch_up_last: bool,
+    pub last_run_at: Option<DateTime<Utc>>,
+    pub next_run_at: Option<DateTime<Utc>>,
+}
+
+impl TriggerDefinition {
+    pub fn manual(source_id: impl Into<String>) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            source_id: source_id.into(),
+            schedule: None,
+            enabled: true,
+            catch_up_last: false,
+            last_run_at: None,
+            next_run_at: None,
+        }
+    }
+
+    pub fn scheduled(source_id: impl Into<String>, schedule: ScheduleSpec) -> Self {
+        Self {
+            schedule: Some(schedule),
+            ..Self::manual(source_id)
+        }
+    }
+
+    pub fn recompute_next(&mut self, after: DateTime<Utc>) -> Result<(), ScheduleError> {
+        self.next_run_at = self
+            .schedule
+            .as_ref()
+            .map(|schedule| schedule.next_after(after))
+            .transpose()?
+            .flatten();
+        Ok(())
+    }
 }
 
 #[derive(Debug, Error)]
@@ -96,6 +140,44 @@ pub enum WakeDecision {
     Wait,
     RunOnce,
     RecordMissed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SchedulerEvent {
+    RunSource { source_id: String },
+    Missed { source_id: String },
+}
+
+pub fn process_due_triggers(
+    triggers: &mut [TriggerDefinition],
+    now: DateTime<Utc>,
+    resumed_or_started: bool,
+) -> Result<Vec<SchedulerEvent>, ScheduleError> {
+    let mut events = Vec::new();
+    for trigger in triggers.iter_mut().filter(|trigger| trigger.enabled) {
+        let Some(schedule) = trigger.schedule.as_ref() else {
+            continue;
+        };
+        let Some(scheduled_for) = trigger.next_run_at else {
+            trigger.next_run_at = schedule.next_after(now)?;
+            continue;
+        };
+        if scheduled_for > now {
+            continue;
+        }
+        if resumed_or_started && !trigger.catch_up_last {
+            events.push(SchedulerEvent::Missed {
+                source_id: trigger.source_id.clone(),
+            });
+        } else {
+            events.push(SchedulerEvent::RunSource {
+                source_id: trigger.source_id.clone(),
+            });
+            trigger.last_run_at = Some(now);
+        }
+        trigger.next_run_at = schedule.next_after(now)?;
+    }
+    Ok(events)
 }
 
 fn next_guided(
