@@ -5246,6 +5246,7 @@ dependencies = [
  "dirs 6.0.0",
  "encoding_rs",
  "keyring",
+ "libc",
  "regex",
  "rusqlite",
  "serde",
