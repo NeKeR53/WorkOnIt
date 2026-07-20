@@ -55,7 +55,12 @@ jobs:
       - name: Check formatting
         if: runner.os == 'Linux'
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
-      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+      - name: Compile Rust tests
+        if: runner.os == 'Windows'
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked --no-run
+      - name: Run Rust tests
+        if: runner.os != 'Windows'
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
 
   dco:
     name: DCO
