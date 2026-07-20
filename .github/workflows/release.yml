@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build ${{ matrix.label }}
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            label: linux-x86_64
+            args: ""
+          - platform: windows-latest
+            label: windows-x86_64
+            args: ""
+          - platform: macos-latest
+            label: macos-aarch64
+            args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            label: macos-x86_64
+            args: --target x86_64-apple-darwin
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: stable
+          targets: ${{ matrix.platform == 'macos-latest' && (matrix.label == 'macos-aarch64' && 'aarch64-apple-darwin' || 'x86_64-apple-darwin') || '' }}
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_SIGNING_IDENTITY: ${{ runner.os == 'macOS' && '-' || '' }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: WorkOnIt ${{ github.ref_name }}
+          releaseBody: See CHANGELOG.md for release notes.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+      - name: Generate checksums
+        run: node scripts/generate-checksums.mjs src-tauri/target SHA256SUMS-${{ matrix.label }}.txt
+      - name: Upload checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" "SHA256SUMS-${{ matrix.label }}.txt" --clobber

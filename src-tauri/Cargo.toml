@@ -4,6 +4,13 @@ version = "0.1.0"
 description = "Local automation kanban"
 authors = ["WorkOnIt contributors"]
 edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/NeKeR53/WorkOnIt"
+homepage = "https://github.com/NeKeR53/WorkOnIt"
+readme = "../README.md"
+keywords = ["automation", "desktop", "kanban", "local-first", "tauri"]
+categories = ["gui"]
+publish = false
 
 [lib]
 name = "workonit_lib"

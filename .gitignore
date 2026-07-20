@@ -13,3 +13,12 @@ vite.config.d.ts
 .DS_Store
 workonit.db
 .workonit-ui.png
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.sig
+SHA256SUMS-*.txt

@@ -1,0 +1,27 @@
+name: Feature request
+description: Proposer une amélioration
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème
+      description: Quel besoin utilisateur reste sans solution?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposition
+      description: Décrivez comportement et limites souhaités.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considérées
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risques et compatibilité

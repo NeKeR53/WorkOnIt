@@ -49,6 +49,7 @@ describe("repository web fallback", () => {
     expect(repository.initialBoards()).toHaveLength(1);
     const legacy = { ...created } as Partial<Board>;
     delete legacy.cardDisplay;
+    delete legacy.sourceIds;
     localStorage.setItem("workonit.boards", JSON.stringify([legacy]));
     expect(repository.initialBoards()[0].cardDisplay).toEqual({
       tags: true,
@@ -434,9 +435,7 @@ describe("repository desktop adapter", () => {
 
   it("reuses the last selected runner for a new action", () => {
     repository.rememberCommandRunner("/opt/homebrew/bin/fish");
-    expect(repository.newCommandAction().runner).toBe(
-      "/opt/homebrew/bin/fish",
-    );
+    expect(repository.newCommandAction().runner).toBe("/opt/homebrew/bin/fish");
   });
 
   it("offers all three macOS shells", () => {
@@ -451,6 +450,36 @@ describe("repository desktop adapter", () => {
       "/bin/sh",
     ]);
     if (descriptor) Object.defineProperty(navigator, "userAgent", descriptor);
+    else delete (navigator as { userAgent?: string }).userAgent;
+  });
+
+  it("offers all three Linux shells", () => {
+    const platformDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "platform",
+    );
+    const userAgentDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "userAgent",
+    );
+    Object.defineProperty(navigator, "platform", {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (X11; Linux x86_64)",
+    });
+    expect(repository.shellRunnerOptions()).toEqual([
+      "/bin/bash",
+      "/bin/zsh",
+      "/bin/sh",
+    ]);
+    if (platformDescriptor)
+      Object.defineProperty(navigator, "platform", platformDescriptor);
+    else delete (navigator as { platform?: string }).platform;
+    if (userAgentDescriptor)
+      Object.defineProperty(navigator, "userAgent", userAgentDescriptor);
     else delete (navigator as { userAgent?: string }).userAgent;
   });
 });
