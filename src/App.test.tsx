@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import i18n from "./i18n";
-import { newSource } from "./lib/repository";
+import { newSource, shellRunnerOptions } from "./lib/repository";
 import { createBoard, createTask, type Board } from "./lib/types";
 
 function richBoard(): Board {
@@ -162,6 +162,7 @@ describe("WorkOnIt main flow", () => {
     render(<App />);
 
     await user.click(screen.getByRole("button", { name: "Sources" }));
+    await user.click(screen.getByRole("button", { name: "Nouvelle source" }));
     await user.click(screen.getByText("Exécution avancée de la source"));
     const advancedSource = screen
       .getByText("Exécution avancée de la source")
@@ -200,6 +201,29 @@ describe("WorkOnIt main flow", () => {
     ).toBeVisible();
     await user.click(
       screen.getByRole("button", { name: "Importer 1 tâche(s)" }),
+    );
+  });
+
+  it("deletes a source from the source list", async () => {
+    const board = seed();
+    const source = newSource();
+    source.name = "Source à supprimer";
+    board.sourceIds = [source.id];
+    localStorage.setItem("workonit.boards", JSON.stringify([board]));
+    localStorage.setItem("workonit.sources", JSON.stringify([source]));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Sources" }));
+    const deleteButton = screen.getByRole("button", {
+      name: "Supprimer la source Source à supprimer",
+    });
+    await user.click(deleteButton);
+    expect(
+      screen.queryByRole("button", { name: /Source à supprimer JSON/ }),
+    ).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("workonit.boards")!)[0].sourceIds).toEqual(
+      [],
     );
   });
 
@@ -328,12 +352,14 @@ describe("WorkOnIt main flow", () => {
     render(<App />);
     await screen.findByRole("heading", { name: board.name });
     mediaListeners.forEach((listener) => listener());
-    await user.click(screen.getByRole("button", { name: "Thème" }));
-    await user.click(screen.getByRole("button", { name: "Thème" }));
+    const themeButton = screen.getByRole("button", { name: /^Thème :/ });
+    await user.click(themeButton);
+    await user.click(themeButton);
     await user.click(screen.getByRole("button", { name: "Other board" }));
     await user.click(screen.getByRole("button", { name: board.name }));
-    await user.selectOptions(screen.getByLabelText("Tri visuel"), "field:text");
-    await user.selectOptions(screen.getByLabelText("Tri visuel"), "manual");
+    const firstColumnSort = screen.getByLabelText("Tri visuel — À faire");
+    await user.selectOptions(firstColumnSort, "field:text");
+    await user.selectOptions(firstColumnSort, "manual");
 
     const dataTransfer = { setData: vi.fn(), getData: () => board.tasks[0].id };
     fireEvent.dragStart(
@@ -370,7 +396,7 @@ describe("WorkOnIt main flow", () => {
     expect(
       screen.getByRole("heading", { name: "Historique", level: 1 }),
     ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: board.name }));
+    await user.click(screen.getByRole("button", { name: "Kanbans" }));
 
     await user.click(screen.getByRole("button", { name: "Nouvelle tâche" }));
     const dialog = screen.getByRole("dialog", { name: "Ajouter une tâche" });
@@ -407,8 +433,8 @@ describe("WorkOnIt main flow", () => {
         within(palette).getByRole("button", { name: new RegExp(query) }),
       );
       expect(
-        screen.getByRole("heading", { name: expected, level: 1 }),
-      ).toBeVisible();
+        screen.getByRole("button", { name: expected }),
+      ).toHaveAttribute("aria-current", "page");
     }
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     const palette = screen.getByRole("dialog", { name: "Palette globale" });
@@ -425,20 +451,18 @@ describe("WorkOnIt main flow", () => {
       await screen.findByRole("heading", { name: "Produit" }),
     ).toBeVisible();
 
-    await user.click(
-      screen.getByRole("button", { name: "Rétracter la navigation" }),
-    );
-    expect(
-      screen.getByRole("button", { name: "Restaurer la navigation" }),
-    ).toBeVisible();
-    await user.click(
-      screen.getByRole("button", { name: "Restaurer la navigation" }),
-    );
-    await user.click(screen.getByRole("button", { name: "Thème" }));
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Thème" }),
-      "system",
-    );
+    const themeButton = screen.getByRole("button", {
+      name: "Thème : Système",
+    });
+    await user.click(themeButton);
+    expect(themeButton).toHaveAccessibleName("Thème : Clair");
+    expect(localStorage.getItem("workonit.theme")).toBe("light");
+    await user.click(themeButton);
+    expect(themeButton).toHaveAccessibleName("Thème : Sombre");
+    expect(localStorage.getItem("workonit.theme")).toBe("dark");
+    await user.click(themeButton);
+    expect(themeButton).toHaveAccessibleName("Thème : Système");
+    expect(localStorage.getItem("workonit.theme")).toBe("system");
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Langue" }),
       "en",
@@ -500,7 +524,8 @@ describe("WorkOnIt main flow", () => {
       screen.queryByRole("dialog", { name: "Créer un kanban" }),
     ).not.toBeInTheDocument();
 
-    const sort = screen.getByLabelText("Tri visuel");
+    const sort = screen.getByLabelText("Tri visuel — À faire");
+    expect(screen.getAllByLabelText(/Tri visuel —/)).toHaveLength(3);
     await user.selectOptions(sort, "date");
     await user.selectOptions(sort, "priority");
     await user.selectOptions(sort, "title");
@@ -519,7 +544,10 @@ describe("WorkOnIt main flow", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("heading", { name: board.name });
-    await user.selectOptions(screen.getByLabelText("Tri visuel"), "priority");
+    await user.selectOptions(
+      screen.getByLabelText("Tri visuel — À faire"),
+      "priority",
+    );
     expect(screen.getByRole("button", { name: "Alpha task" })).toBeVisible();
   });
 
@@ -626,7 +654,7 @@ describe("WorkOnIt main flow", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Configurer" }));
-    const settings = screen.getByRole("dialog", {
+    const settings = screen.getByRole("region", {
       name: "Configurer le kanban",
     });
     await user.type(
@@ -674,13 +702,13 @@ describe("WorkOnIt main flow", () => {
       }),
     );
     await user.click(
-      within(settings).getByRole("button", { name: "Fermer la configuration" }),
+      screen.getByRole("button", { name: "Fermer la configuration" }),
     );
 
     await user.click(screen.getByRole("button", { name: "Alpha task" }));
     await user.click(screen.getByRole("button", { name: "Archiver" }));
     await user.click(screen.getByRole("button", { name: "Archives" }));
-    const archives = screen.getByRole("dialog", { name: "Archives" });
+    const archives = screen.getByRole("region", { name: "Archives" });
     await user.click(
       within(archives).getAllByRole("button", { name: "Restaurer" })[0],
     );
@@ -714,6 +742,7 @@ describe("WorkOnIt main flow", () => {
     const firstRender = render(<App />);
     await screen.findByRole("heading", { name: noColumns.name });
     await user.click(screen.getByRole("button", { name: "Automatisations" }));
+    await user.click(screen.getByRole("button", { name: "Nouvelle action" }));
     await user.click(
       screen.getByRole("button", { name: "Enregistrer brouillon" }),
     );
@@ -750,9 +779,9 @@ describe("WorkOnIt main flow", () => {
 
   it("edits source formats, mappings and every schedule kind", async () => {
     const board = seed();
-    const primarySource = newSource(board);
+    const primarySource = newSource();
     primarySource.command.timeoutSeconds = undefined;
-    const secondarySource = newSource(board);
+    const secondarySource = newSource();
     secondarySource.id = "source-secondary";
     secondarySource.name = "Secondary source";
     localStorage.setItem(
@@ -763,6 +792,7 @@ describe("WorkOnIt main flow", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Produit" });
     await user.click(screen.getByRole("button", { name: "Sources" }));
+    await user.click(screen.getByRole("button", { name: primarySource.name }));
     await user.selectOptions(screen.getByLabelText("Format"), "jsonl");
     await user.selectOptions(screen.getByLabelText("Encodage"), "auto");
     fireEvent.change(screen.getByLabelText("Sortie brute"), {
@@ -887,6 +917,9 @@ describe("WorkOnIt main flow", () => {
       screen.getByRole("button", { name: "Enregistrer brouillon" }),
     );
     await user.click(
+      screen.getByRole("button", { name: /Nouvelle source TEXT/ }),
+    );
+    await user.click(
       screen.getByRole("button", { name: "Enregistrer et activer" }),
     );
     await user.click(screen.getByRole("button", { name: "Nouvelle source" }));
@@ -923,8 +956,8 @@ describe("WorkOnIt main flow", () => {
     render(<App />);
     await screen.findByRole("heading", { name: board.name });
     await user.click(screen.getByRole("button", { name: "Automatisations" }));
-    await screen.findByDisplayValue("Publish");
     await user.click(screen.getByRole("button", { name: /Publish/ }));
+    await screen.findByDisplayValue("Publish");
 
     const conditionType = screen.getByLabelText("Type");
     await user.selectOptions(conditionType, "fieldEquals");
@@ -933,15 +966,20 @@ describe("WorkOnIt main flow", () => {
     await user.selectOptions(conditionType, "fieldContains");
     await user.selectOptions(conditionType, "origin");
     await user.selectOptions(screen.getByLabelText("Origine"), "source");
-    await user.selectOptions(conditionType, "operatingSystem");
-    await user.selectOptions(screen.getByLabelText("Système"), "windows");
+    expect(
+      within(conditionType).queryByRole("option", { name: "Système" }),
+    ).not.toBeInTheDocument();
     await user.selectOptions(conditionType, "none");
 
     await user.click(screen.getByRole("tab", { name: "Commande" }));
     await user.clear(screen.getByLabelText("Nom de l’action"));
     await user.type(screen.getByLabelText("Nom de l’action"), "Publish edited");
-    await user.clear(screen.getByLabelText("Runner"));
-    await user.type(screen.getByLabelText("Runner"), "/bin/bash");
+    const runner = screen.getByLabelText("Runner");
+    expect(runner).toBeInstanceOf(HTMLSelectElement);
+    for (const option of shellRunnerOptions()) {
+      expect(within(runner).getByRole("option", { name: option })).toBeVisible();
+    }
+    await user.selectOptions(runner, shellRunnerOptions()[1]);
     await user.clear(screen.getByLabelText("Commande shell"));
     await user.type(screen.getByLabelText("Commande shell"), "echo publish");
     await user.click(
@@ -953,6 +991,7 @@ describe("WorkOnIt main flow", () => {
         "Droits administrateur refusés. Commande approuvée = accès normal du compte, sans sandbox.",
       )
       .closest("div")!;
+    expect(within(context).queryByText(/Variante (macOS|Windows)/)).toBeNull();
     await user.type(
       within(context).getByLabelText("Dossier de travail"),
       "/tmp",
@@ -1021,13 +1060,6 @@ describe("WorkOnIt main flow", () => {
         "Action destructive — confirmation obligatoire",
       ),
     );
-    const variantRunners = within(context).getAllByLabelText("Runner");
-    await user.type(variantRunners[0], "zsh");
-    await user.type(variantRunners[1], "pwsh");
-    const variantCommands = within(context).getAllByLabelText("Commande");
-    await user.type(variantCommands[0], "echo mac");
-    await user.type(variantCommands[1], "echo win");
-
     await user.click(screen.getByRole("tab", { name: "Conditions" }));
     await user.selectOptions(screen.getByLabelText("De"), board.columns[1].id);
     await user.selectOptions(
@@ -1111,17 +1143,12 @@ describe("WorkOnIt main flow", () => {
     await user.click(
       screen.getByRole("button", { name: "Enregistrer et activer" }),
     );
-    await user.click(screen.getByRole("button", { name: "Nouvelle action" }));
-    await user.click(screen.getByRole("tab", { name: "Contexte" }));
-    const newContext = screen
-      .getByText(
-        "Droits administrateur refusés. Commande approuvée = accès normal du compte, sans sandbox.",
-      )
-      .closest("div")!;
-    await user.type(
-      within(newContext).getAllByLabelText("Commande")[0],
-      "echo fallback",
+    await user.click(
+      screen.getByRole("button", { name: "Retour aux actions" }),
     );
+    await user.click(screen.getByRole("button", { name: "Nouvelle action" }));
+    await user.type(screen.getByLabelText("Commande shell"), "echo fallback");
+    await user.click(screen.getByRole("tab", { name: "Contexte" }));
     await user.click(screen.getByRole("tab", { name: "Conditions" }));
     await user.click(
       screen.getByRole("button", { name: "Ajouter l’action courante" }),
@@ -1150,7 +1177,7 @@ describe("WorkOnIt main flow", () => {
       ),
     ).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Réglages" }));
-    const settings = screen.getByRole("dialog", { name: "Réglages WorkOnIt" });
+    const settings = screen.getByRole("region", { name: "Réglages WorkOnIt" });
     for (const name of [
       "Échecs",
       "Confirmations",
@@ -1172,14 +1199,9 @@ describe("WorkOnIt main flow", () => {
     await user.click(
       within(settings).getByRole("button", { name: "Créer un snapshot" }),
     );
-    await user.click(
-      within(settings).getByRole("button", { name: "Fermer les réglages" }),
-    );
     await user.click(screen.getByRole("button", { name: "Archives" }));
     expect(screen.getByText("Archived task")).toBeVisible();
-    await user.click(
-      screen.getByRole("button", { name: "Fermer les archives" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Kanbans" }));
   });
 
   it("explains that an automation test needs a sample task", async () => {
@@ -1189,6 +1211,7 @@ describe("WorkOnIt main flow", () => {
     render(<App />);
     await screen.findByRole("heading", { name: board.name });
     await user.click(screen.getByRole("button", { name: "Automatisations" }));
+    await user.click(screen.getByRole("button", { name: "Nouvelle action" }));
     await user.click(screen.getByRole("tab", { name: "Test" }));
     await user.click(screen.getByRole("button", { name: "Exécuter le test" }));
     await user.click(

@@ -68,6 +68,7 @@ export type CustomFieldValue =
 export interface Board {
   id: string;
   name: string;
+  sourceIds: string[];
   columns: Column[];
   tasks: Task[];
   customFields: Array<{
@@ -89,7 +90,14 @@ export interface Board {
   updatedAt: string;
 }
 
-export type Page = "boards" | "sources" | "automations" | "history";
+export type Page =
+  | "boards"
+  | "sources"
+  | "automations"
+  | "history"
+  | "settings"
+  | "archives"
+  | "board-settings";
 
 const id = () => crypto.randomUUID();
 
@@ -99,21 +107,21 @@ export function createBoard(name: string): Board {
     {
       id: id(),
       name: "À faire",
-      color: "#65558f",
+      color: "#43586d",
       position: 0,
       wipPolicy: { kind: "none" },
     },
     {
       id: id(),
       name: "En cours",
-      color: "#006a6a",
+      color: "#b4552d",
       position: 1,
       wipPolicy: { kind: "warning", limit: 5 },
     },
     {
       id: id(),
       name: "Terminé",
-      color: "#4f6354",
+      color: "#2f5d3f",
       position: 2,
       wipPolicy: { kind: "none" },
     },
@@ -121,6 +129,7 @@ export function createBoard(name: string): Board {
   return {
     id: id(),
     name: name.trim(),
+    sourceIds: [],
     columns,
     tasks: [],
     customFields: [],

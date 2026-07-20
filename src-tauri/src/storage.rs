@@ -12,7 +12,7 @@ use rusqlite::{params, Connection, DatabaseName, OptionalExtension};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
-const SCHEMA_VERSION: i64 = 7;
+const SCHEMA_VERSION: i64 = 8;
 
 #[derive(Debug, Error)]
 pub enum StorageError {
@@ -167,13 +167,31 @@ impl Store {
                 params![board.id, rule.from_column_id, rule.to_column_id],
             )?;
         }
-        transaction.execute(
-            "INSERT INTO board_settings (board_id, transitions_restricted)
-             VALUES (?1, ?2)
-             ON CONFLICT(board_id) DO UPDATE SET
-               transitions_restricted = excluded.transitions_restricted",
-            params![board.id, board.transitions_restricted],
-        )?;
+        let has_source_ids = transaction
+            .prepare("SELECT 1 FROM pragma_table_info('board_settings') WHERE name = 'source_ids'")?
+            .exists([])?;
+        if has_source_ids {
+            transaction.execute(
+                "INSERT INTO board_settings (board_id, transitions_restricted, source_ids)
+                 VALUES (?1, ?2, ?3)
+                 ON CONFLICT(board_id) DO UPDATE SET
+                   transitions_restricted = excluded.transitions_restricted,
+                   source_ids = excluded.source_ids",
+                params![
+                    board.id,
+                    board.transitions_restricted,
+                    serde_json::to_string(&board.source_ids)?,
+                ],
+            )?;
+        } else {
+            transaction.execute(
+                "INSERT INTO board_settings (board_id, transitions_restricted)
+                 VALUES (?1, ?2)
+                 ON CONFLICT(board_id) DO UPDATE SET
+                   transitions_restricted = excluded.transitions_restricted",
+                params![board.id, board.transitions_restricted],
+            )?;
+        }
         transaction.commit()?;
         Ok(())
     }
@@ -318,18 +336,19 @@ impl Store {
             })?;
             rows.collect::<rusqlite::Result<Vec<_>>>()?
         };
-        let transitions_restricted = self
+        let (transitions_restricted, source_ids) = self
             .connection
             .query_row(
-                "SELECT transitions_restricted FROM board_settings WHERE board_id = ?1",
+                "SELECT transitions_restricted, source_ids FROM board_settings WHERE board_id = ?1",
                 [id],
-                |row| row.get(0),
+                |row| Ok((row.get(0)?, row.get::<_, String>(1)?)),
             )
             .optional()?
-            .unwrap_or(false);
+            .unwrap_or((false, "[]".to_owned()));
         Ok(Some(Board {
             id: id.to_owned(),
             name,
+            source_ids: serde_json::from_str(&source_ids)?,
             columns,
             tasks,
             custom_fields,
@@ -541,11 +560,36 @@ impl Store {
     }
 
     pub fn list_sources(&self, board_id: &str) -> Result<Vec<SourceDefinition>, StorageError> {
-        let mut statement = self
-            .connection
-            .prepare("SELECT data FROM sources WHERE board_id = ?1 ORDER BY name")?;
-        let rows = statement.query_map([board_id], |row| row.get::<_, String>(0))?;
-        deserialize_rows(rows)
+        let Some(board) = self.get_board(board_id)? else {
+            return Ok(Vec::new());
+        };
+        let initial_column_id = board
+            .columns
+            .first()
+            .map(|column| column.id.clone())
+            .unwrap_or_default();
+        Ok(self
+            .list_all_sources()?
+            .into_iter()
+            .filter(|source| board.source_ids.contains(&source.id))
+            .map(|mut source| {
+                source.board_id = board_id.to_owned();
+                if source.initial_column_id.is_empty() {
+                    source.initial_column_id = initial_column_id.clone();
+                }
+                source
+            })
+            .collect())
+    }
+
+    pub fn list_all_sources(&self) -> Result<Vec<SourceDefinition>, StorageError> {
+        self.list_json("SELECT data FROM sources ORDER BY name")
+    }
+
+    pub fn delete_source(&self, source_id: &str) -> Result<(), StorageError> {
+        self.connection
+            .execute("DELETE FROM sources WHERE id = ?1", [source_id])?;
+        Ok(())
     }
 
     pub fn get_source(&self, source_id: &str) -> Result<Option<SourceDefinition>, StorageError> {
@@ -898,8 +942,37 @@ impl Store {
                  )
                  WHERE source_name IS NOT NULL;",
             )?;
+            transaction.pragma_update(None, "user_version", 7)?;
+            transaction.commit()?;
+            version = 7;
+        }
+        if version == 7 {
+            self.connection.pragma_update(None, "foreign_keys", "OFF")?;
+            let transaction = self.connection.transaction()?;
+            transaction.execute_batch(
+                "ALTER TABLE board_settings ADD COLUMN source_ids TEXT NOT NULL DEFAULT '[]';
+                 UPDATE board_settings
+                 SET source_ids = COALESCE(
+                   (SELECT '[' || group_concat('\"' || sources.id || '\"', ',') || ']'
+                    FROM sources WHERE sources.board_id = board_settings.board_id),
+                   '[]'
+                 );
+                 CREATE TABLE sources_new (
+                   id TEXT PRIMARY KEY,
+                   board_id TEXT NOT NULL DEFAULT '',
+                   name TEXT NOT NULL,
+                   enabled INTEGER NOT NULL DEFAULT 0,
+                   data TEXT NOT NULL,
+                   updated_at TEXT NOT NULL
+                 );
+                 INSERT INTO sources_new SELECT * FROM sources;
+                 UPDATE sources_new SET board_id = '', data = json_set(data, '$.boardId', '');
+                 DROP TABLE sources;
+                 ALTER TABLE sources_new RENAME TO sources;",
+            )?;
             transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
             transaction.commit()?;
+            self.connection.pragma_update(None, "foreign_keys", "ON")?;
         }
         Ok(())
     }

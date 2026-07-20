@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>WorkOnIt — Option 2 · Éditorial</title>
+<style>
+/* ===== OPTION 2 — ÉDITORIAL NOIR & BLANC ======================
+   Papier journal numérique : blanc pur, encre noire, hairlines,
+   angles carrés, serif pour les titres, un seul accent rouge.
+   Le kanban comme une page maquettée, pas une app SaaS. */
+:root{
+  --paper:#ffffff; --ink:#111111; --gray:#666; --faint:#9a9a9a;
+  --line:#e2e2e2; --hard:#111; --accent:#d63b2f;
+  --serif:"Georgia","Times New Roman",serif;
+  --sans:"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.masthead{border-bottom:2px solid var(--hard);padding:14px 28px 12px;display:flex;align-items:baseline;gap:22px}
+.masthead h1{font-family:var(--serif);font-size:24px;font-weight:700;letter-spacing:-.3px}
+.masthead nav{display:flex;gap:18px;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.masthead nav a{color:var(--gray);text-decoration:none;padding-bottom:2px}
+.masthead nav a.on{color:var(--ink);border-bottom:2px solid var(--accent)}
+.masthead .tools{margin-left:auto;display:flex;gap:10px;align-items:center}
+.search{border:none;border-bottom:1px solid var(--line);padding:4px 2px;width:180px;font:inherit;color:var(--ink);outline:none}
+.search::placeholder{color:var(--faint)}
+.btn{border:1px solid var(--hard);background:var(--paper);padding:6px 14px;font:600 12px var(--sans);letter-spacing:.4px;text-transform:uppercase;cursor:pointer}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.fill{background:var(--ink);color:var(--paper)}
+.btn.fill:hover{background:#000}
+.subhead{padding:10px 28px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px}
+.subhead h2{font-family:var(--serif);font-size:17px;font-weight:700}
+.subhead .note{color:var(--faint);font-size:12px;font-style:italic}
+.board{flex:1;display:grid;grid-template-columns:repeat(3,1fr);overflow:hidden}
+.col{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.col:last-child{border-right:0}
+.colhead{padding:14px 22px 10px;display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--hard)}
+.colhead h3{font:700 12px var(--sans);letter-spacing:1.4px;text-transform:uppercase}
+.count{font-family:var(--serif);font-style:italic;color:var(--faint);font-size:13px}
+.colhead .add{margin-left:auto;font-size:16px;color:var(--faint);cursor:pointer;line-height:1}
+.colhead .add:hover{color:var(--ink)}
+.cards{overflow-y:auto;display:flex;flex-direction:column}
+.card{padding:16px 22px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.card:hover{background:#fafafa}
+.card.sel{border-left:3px solid var(--accent);padding-left:19px;background:#fcf9f8}
+.tt{font-family:var(--serif);font-size:15.5px;font-weight:700;line-height:1.35;letter-spacing:-.1px}
+.desc{color:var(--gray);font-size:12.5px;max-width:52ch}
+.byline{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:11px;color:var(--faint)}
+.byline .tag{text-transform:uppercase;letter-spacing:.8px}
+.byline .tag+.tag::before{content:"· ";color:var(--line)}
+.pr-h{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.status{font-weight:700;text-transform:uppercase;letter-spacing:.8px;font-size:10.5px}
+.status.err{color:var(--accent)}
+.status.run{color:var(--ink);border-bottom:1px solid var(--ink)}
+.status.ok{color:var(--gray);text-decoration:line-through}
+.due{margin-left:auto;font-family:var(--serif);font-style:italic;font-size:12px}
+.wip{margin:0;padding:8px 22px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--accent);font-weight:700}
+</style>
+</head>
+<body>
+<header class="masthead">
+  <h1>WorkOnIt</h1>
+  <nav>
+    <a class="on" href="#">Kanbans</a>
+    <a href="#">Sources</a>
+    <a href="#">Automatisations</a>
+    <a href="#">Historique</a>
+  </nav>
+  <div class="tools">
+    <input class="search" placeholder="Rechercher…  ⌘K">
+    <button class="btn">Configurer</button>
+    <button class="btn fill">Nouvelle tâche</button>
+  </div>
+</header>
+<div class="subhead">
+  <h2>Projet Alpha</h2>
+  <span class="note">8 tâches — mis à jour aujourd'hui 22:41</span>
+</div>
+<main class="board">
+  <section class="col">
+    <div class="colhead"><h3>À faire</h3><span class="count">(3)</span><span class="add">+</span></div>
+    <div class="cards">
+      <article class="card sel">
+        <span class="tt">Corriger le bug d'export CSV</span>
+        <span class="desc">Le séparateur point-virgule casse les colonnes dans Excel FR.</span>
+        <div class="byline"><span class="pr-h">Haute</span><span class="tag">bug</span><span class="tag">export</span><span class="due">18 juillet</span></div>
+      </article>
+      <article class="card">
+        <span class="tt">Rédiger la doc d'installation</span>
+        <div class="byline"><span class="tag">doc</span></div>
+      </article>
+      <article class="card">
+        <span class="tt">Migrer la CI vers les runners ARM</span>
+        <div class="byline"><span class="tag">infra</span><span class="due">1<sup>er</sup> août</span></div>
+      </article>
+    </div>
+  </section>
+  <section class="col">
+    <div class="colhead"><h3>En cours</h3><span class="count">(3)</span><span class="add">+</span></div>
+    <div class="wip">⚠ Limite conseillée atteinte</div>
+    <div class="cards">
+      <article class="card">
+        <span class="tt">Implémenter le drag &amp; drop clavier</span>
+        <div class="byline"><span class="pr-h">Haute</span><span class="tag">a11y</span><span class="status run">En cours 2/4</span></div>
+      </article>
+      <article class="card">
+        <span class="tt">Nettoyer les tokens de thème</span>
+        <span class="desc">Les variantes sombres divergent du spec.</span>
+        <div class="byline"><span class="tag">design</span><span class="status err">Échec — voir logs</span></div>
+      </article>
+      <article class="card">
+        <span class="tt">Optimiser le chargement des colonnes</span>
+        <div class="byline"><span class="tag">perf</span></div>
+      </article>
+    </div>
+  </section>
+  <section class="col">
+    <div class="colhead"><h3>Terminé</h3><span class="count">(2)</span><span class="add">+</span></div>
+    <div class="cards">
+      <article class="card">
+        <span class="tt">Publier la release 0.1.0</span>
+        <div class="byline"><span class="tag">release</span><span class="status ok">Succès</span></div>
+      </article>
+      <article class="card">
+        <span class="tt">Configurer l'auto-update</span>
+        <div class="byline"><span class="tag">infra</span></div>
+      </article>
+    </div>
+  </section>
+</main>
+</body>
+</html>

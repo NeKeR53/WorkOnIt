@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>WorkOnIt — Option 1 · Graphite</title>
+<style>
+/* ===== OPTION 1 — GRAPHITE ===================================
+   Sombre neutre froid façon outil pro (Linear-like).
+   Angles 6px, bordures hairline, accent bleu acier unique,
+   densité forte, aucune couleur de marque envahissante. */
+:root{
+  --bg:#101012; --panel:#161618; --card:#1c1c1f; --line:#26262a;
+  --ink:#e8e8ea; --dim:#8b8b93; --faint:#5b5b63;
+  --accent:#4c8dff; --ok:#3fb96a; --warn:#d9a13c; --err:#e5544b;
+  font-family:"Inter","Segoe UI",-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;height:100vh;display:flex;overflow:hidden}
+.side{width:212px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:10px}
+.brand{display:flex;align-items:center;gap:8px;padding:6px 8px 14px;font-weight:600;font-size:13px;letter-spacing:.2px}
+.logo{width:22px;height:22px;border-radius:6px;background:linear-gradient(180deg,#2e2e33,#1c1c1f);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--accent)}
+.nav a{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;color:var(--dim);text-decoration:none;font-weight:500}
+.nav a:hover{background:#1e1e21;color:var(--ink)}
+.nav a.on{background:#232327;color:var(--ink)}
+.nav a.on .ico{color:var(--accent)}
+.ico{font-size:14px;width:16px;text-align:center;color:var(--faint)}
+.sect{margin:16px 8px 4px;font-size:10px;font-weight:600;color:var(--faint);letter-spacing:.8px;text-transform:uppercase}
+.sub a{padding-left:33px;font-size:12.5px}
+.side .foot{margin-top:auto}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{height:46px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bg)}
+.crumb{color:var(--dim);font-size:12.5px}.crumb b{color:var(--ink);font-weight:600}
+.search{margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:6px;height:28px;padding:0 8px;width:240px;color:var(--faint);font-size:12px}
+.search kbd{margin-left:auto;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:10px;font-family:inherit}
+.btn{height:28px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:12.5px;font-weight:500;padding:0 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#1e1e21}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#3f7fef}
+.board{flex:1;display:flex;gap:1px;background:var(--line);overflow-x:auto}
+.col{width:300px;flex:0 0 300px;background:var(--bg);display:flex;flex-direction:column}
+.colhead{height:38px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line)}
+.dot{width:8px;height:8px;border-radius:2px}
+.colhead h2{font-size:12px;font-weight:600;letter-spacing:.2px}
+.count{color:var(--faint);font-size:11.5px;font-variant-numeric:tabular-nums}
+.colhead .add{margin-left:auto;color:var(--faint);cursor:pointer;font-size:15px;line-height:1}
+.colhead .add:hover{color:var(--ink)}
+.cards{padding:8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:9px 10px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+.card:hover{border-color:#333338}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.id{font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.tt{font-size:12.5px;font-weight:550;line-height:1.4}
+.desc{color:var(--dim);font-size:11.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.chip{font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.pr{font-size:10.5px;font-weight:600;border-radius:4px;padding:1px 6px}
+.pr.h{color:#ff8f88;background:rgba(229,84,75,.12)}
+.pr.m{color:var(--dim);background:#222226}
+.pr.l{color:var(--faint);background:#1c1c1f}
+.st{font-size:10.5px;font-weight:600;border-radius:4px;padding:1px 6px;display:inline-flex;gap:4px;align-items:center}
+.st::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.st.run{color:#7fb1ff;background:rgba(76,141,255,.12)}
+.st.err{color:#ff8f88;background:rgba(229,84,75,.12)}
+.st.ok{color:#6fd394;background:rgba(63,185,106,.12)}
+.due{margin-left:auto;font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.wip{margin:8px 8px 0;border:1px solid rgba(217,161,60,.4);background:rgba(217,161,60,.08);color:var(--warn);border-radius:6px;padding:6px 9px;font-size:11px;display:flex;gap:6px;align-items:center}
+</style>
+</head>
+<body>
+<aside class="side">
+  <div class="brand"><span class="logo">◪</span> WorkOnIt</div>
+  <nav class="nav">
+    <a class="on" href="#"><span class="ico">▦</span> Kanbans</a>
+    <div class="sub">
+      <a href="#" style="color:var(--ink)">Projet Alpha</a>
+      <a href="#">+ Nouveau kanban</a>
+    </div>
+    <div class="sect">Système</div>
+    <a href="#"><span class="ico">⇣</span> Sources</a>
+    <a href="#"><span class="ico">ƒ</span> Automatisations</a>
+    <a href="#"><span class="ico">↺</span> Historique</a>
+  </nav>
+  <nav class="nav foot">
+    <a href="#"><span class="ico">▤</span> Archives</a>
+    <a href="#"><span class="ico">⚙</span> Réglages</a>
+  </nav>
+</aside>
+<div class="main">
+  <header class="top">
+    <span class="crumb">Kanbans / <b>Projet Alpha</b></span>
+    <div class="search">⌕ Rechercher… <kbd>⌘K</kbd></div>
+    <button class="btn">Configurer</button>
+    <button class="btn primary">+ Nouvelle tâche</button>
+  </header>
+  <main class="board">
+    <section class="col">
+      <div class="colhead"><span class="dot" style="background:#6f7480"></span><h2>À faire</h2><span class="count">3</span><span class="add">+</span></div>
+      <div class="cards">
+        <article class="card sel">
+          <span class="id">WOI-14</span>
+          <span class="tt">Corriger le bug d'export CSV</span>
+          <span class="desc">Le séparateur point-virgule casse les colonnes dans Excel FR.</span>
+          <div class="meta"><span class="pr h">Haute</span><span class="chip">bug</span><span class="chip">export</span><span class="due">18 juil.</span></div>
+        </article>
+        <article class="card">
+          <span class="id">WOI-15</span>
+          <span class="tt">Rédiger la doc d'installation</span>
+          <div class="meta"><span class="pr m">Normale</span><span class="chip">doc</span></div>
+        </article>
+        <article class="card">
+          <span class="id">WOI-16</span>
+          <span class="tt">Migrer la CI vers les runners ARM</span>
+          <div class="meta"><span class="pr l">Basse</span><span class="chip">infra</span><span class="due">1 août</span></div>
+        </article>
+      </div>
+    </section>
+    <section class="col">
+      <div class="colhead"><span class="dot" style="background:#4c8dff"></span><h2>En cours</h2><span class="count">3</span><span class="add">+</span></div>
+      <div class="wip">⚠ Limite conseillée atteinte (3/2)</div>
+      <div class="cards">
+        <article class="card">
+          <span class="id">WOI-11</span>
+          <span class="tt">Implémenter le drag &amp; drop clavier</span>
+          <div class="meta"><span class="pr h">Haute</span><span class="chip">a11y</span><span class="st run">En cours 2/4</span></div>
+        </article>
+        <article class="card">
+          <span class="id">WOI-12</span>
+          <span class="tt">Nettoyer les tokens de thème</span>
+          <span class="desc">Les variantes sombres divergent du spec.</span>
+          <div class="meta"><span class="chip">design</span><span class="st err">Échec</span></div>
+        </article>
+        <article class="card">
+          <span class="id">WOI-13</span>
+          <span class="tt">Optimiser le chargement des colonnes</span>
+          <div class="meta"><span class="pr m">Normale</span><span class="chip">perf</span></div>
+        </article>
+      </div>
+    </section>
+    <section class="col">
+      <div class="colhead"><span class="dot" style="background:#3fb96a"></span><h2>Terminé</h2><span class="count">2</span><span class="add">+</span></div>
+      <div class="cards">
+        <article class="card">
+          <span class="id">WOI-09</span>
+          <span class="tt">Publier la release 0.1.0</span>
+          <div class="meta"><span class="chip">release</span><span class="st ok">Succès</span></div>
+        </article>
+        <article class="card">
+          <span class="id">WOI-10</span>
+          <span class="tt">Configurer l'auto-update</span>
+          <div class="meta"><span class="chip">infra</span></div>
+        </article>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

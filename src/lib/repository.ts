@@ -24,6 +24,7 @@ import type {
 
 const BOARDS_KEY = "workonit.boards";
 const ACTIONS_KEY = "workonit.actions";
+const LAST_RUNNER_KEY = "workonit.lastRunner";
 const SOURCES_KEY = "workonit.sources";
 
 function localBoards(): Board[] {
@@ -33,6 +34,7 @@ function localBoards(): Board[] {
     ) as Board[];
     return boards.map((board) => ({
       ...board,
+      sourceIds: board.sourceIds ?? [],
       cardDisplay: board.cardDisplay ?? {
         tags: true,
         priority: true,
@@ -388,12 +390,43 @@ function saveLocalItem<T extends { id: string }>(key: string, item: T): void {
   localStorage.setItem(key, JSON.stringify(values));
 }
 
+type OperatingSystem = "windows" | "macOs" | "linux";
+
+function currentOperatingSystem(): OperatingSystem {
+  const platform = `${navigator.platform ?? ""} ${navigator.userAgent}`.toLowerCase();
+  if (platform.includes("win")) return "windows";
+  if (platform.includes("mac")) return "macOs";
+  return "linux";
+}
+
+export function shellRunnerOptions(): string[] {
+  switch (currentOperatingSystem()) {
+    case "windows":
+      return [
+        "powershell",
+        "pwsh",
+        "cmd.exe",
+        "C:\\Program Files\\Git\\bin\\bash.exe",
+      ];
+    case "macOs":
+      return ["/bin/zsh", "/bin/bash", "/bin/sh"];
+    case "linux":
+      return ["/bin/bash", "/bin/zsh", "/bin/sh"];
+  }
+}
+
+export function rememberCommandRunner(runner: string): void {
+  const value = runner.trim();
+  if (value) localStorage.setItem(LAST_RUNNER_KEY, value);
+}
+
 export function newCommandAction(name = "Nouvelle action"): CommandAction {
+  const runner = localStorage.getItem(LAST_RUNNER_KEY) ?? shellRunnerOptions()[0];
   return {
     id: crypto.randomUUID(),
     name,
     script: "",
-    runner: navigator.userAgent.includes("Windows") ? "powershell" : "/bin/zsh",
+    runner,
     loadProfile: false,
     timeoutSeconds: 300,
     acceptedExitCodes: [0],
@@ -417,22 +450,23 @@ export async function loadActions(): Promise<CommandAction[]> {
 export async function saveActionInRepository(
   action: CommandAction,
 ): Promise<void> {
+  rememberCommandRunner(action.runner);
   if (isDesktopRuntime()) await invokeDesktop("save_action", { action });
   saveLocalItem(ACTIONS_KEY, action);
 }
 
-export function newSource(board: Board): SourceDefinition {
+export function newSource(): SourceDefinition {
   const name = "Nouvelle source";
   return {
     id: crypto.randomUUID(),
-    boardId: board.id,
+    boardId: "",
     name,
     command: newCommandAction(name),
     format: "json",
     mapping: { title: "$.title", externalKey: "$.id" },
     customFieldMapping: {},
     allowedUpdateCustomFields: [],
-    initialColumnId: board.columns[0]?.id ?? "",
+    initialColumnId: "",
     columnMapping: {},
     allowedUpdateFields: ["title", "description"],
     moveExistingTasks: false,
@@ -444,14 +478,10 @@ export function newSource(board: Board): SourceDefinition {
   };
 }
 
-export async function loadSources(
-  boardId: string,
-): Promise<SourceDefinition[]> {
+export async function loadSources(): Promise<SourceDefinition[]> {
   const sources = isDesktopRuntime()
-    ? await invokeDesktop<SourceDefinition[]>("list_sources", { boardId })
-    : localList<SourceDefinition>(SOURCES_KEY).filter(
-        (source) => source.boardId === boardId,
-      );
+    ? await invokeDesktop<SourceDefinition[]>("list_all_sources")
+    : localList<SourceDefinition>(SOURCES_KEY);
   return sources.map((source) => ({
     ...source,
     customFieldMapping: source.customFieldMapping ?? {},
@@ -464,6 +494,27 @@ export async function saveSourceInRepository(
 ): Promise<void> {
   if (isDesktopRuntime()) await invokeDesktop("save_source", { source });
   saveLocalItem(SOURCES_KEY, source);
+}
+
+export async function deleteSourceInRepository(sourceId: string): Promise<void> {
+  if (isDesktopRuntime()) await invokeDesktop("delete_source", { sourceId });
+  localStorage.setItem(
+    SOURCES_KEY,
+    JSON.stringify(
+      localList<SourceDefinition>(SOURCES_KEY).filter(
+        (source) => source.id !== sourceId,
+      ),
+    ),
+  );
+  localStorage.setItem(
+    BOARDS_KEY,
+    JSON.stringify(
+      localBoards().map((board) => ({
+        ...board,
+        sourceIds: board.sourceIds.filter((id) => id !== sourceId),
+      })),
+    ),
+  );
 }
 
 export async function runSourceNow(

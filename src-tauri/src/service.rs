@@ -86,16 +86,14 @@ pub enum ServiceError {
 pub fn export_all(store: &Store) -> Result<ExportBundle, ServiceError> {
     let boards = store.list_boards()?;
     let mut automations = Vec::new();
-    let mut sources = Vec::new();
     for board in &boards {
         automations.extend(store.list_transition_automations(&board.id)?);
-        sources.extend(store.list_sources(&board.id)?);
     }
     Ok(ExportBundle {
         boards,
         actions: store.list_actions()?,
         automations,
-        sources,
+        sources: store.list_all_sources()?,
         triggers: store.list_all_triggers()?,
         execution_history: store.list_executions()?,
         logs: Vec::new(),
@@ -130,9 +128,14 @@ pub fn export_selected(
             .actions
             .retain(|action| action_ids.contains(action.id.as_str()));
     }
+    let selected_source_ids: HashSet<&str> = bundle
+        .boards
+        .iter()
+        .flat_map(|board| board.source_ids.iter().map(String::as_str))
+        .collect();
     bundle
         .sources
-        .retain(|source| include_sources && selected_boards.contains(source.board_id.as_str()));
+        .retain(|source| include_sources && selected_source_ids.contains(source.id.as_str()));
     let source_ids: HashSet<&str> = bundle
         .sources
         .iter()
@@ -159,7 +162,19 @@ pub fn apply_import_to_store(
     decisions: &[ConflictDecision],
 ) -> Result<ExportBundle, ServiceError> {
     store.create_backup(backup_directory, BackupKind::PreImport)?;
-    let merged = apply_import(&export_all(store)?, imported, decisions)?;
+    let mut merged = apply_import(&export_all(store)?, imported, decisions)?;
+    for source in &mut merged.sources {
+        if let Some(board) = merged
+            .boards
+            .iter_mut()
+            .find(|board| board.id == source.board_id)
+        {
+            if !board.source_ids.contains(&source.id) {
+                board.source_ids.push(source.id.clone());
+            }
+        }
+        source.board_id.clear();
+    }
     for board in &merged.boards {
         store.save_board(board)?;
     }

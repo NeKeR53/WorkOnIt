@@ -180,7 +180,9 @@ fn version_six_migration_adds_and_backfills_stable_source_ids() {
     connection
         .execute_batch(
             "CREATE TABLE tasks (board_id TEXT NOT NULL, source_name TEXT);
-             CREATE TABLE sources (id TEXT PRIMARY KEY, board_id TEXT NOT NULL, name TEXT NOT NULL);
+             CREATE TABLE board_settings (board_id TEXT PRIMARY KEY, transitions_restricted INTEGER NOT NULL DEFAULT 0);
+             CREATE TABLE sources (id TEXT PRIMARY KEY, board_id TEXT NOT NULL, name TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0, data TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT '');
+             INSERT INTO board_settings (board_id) VALUES ('board');
              INSERT INTO tasks (board_id, source_name) VALUES ('board', 'Renamable feed');
              INSERT INTO sources (id, board_id, name) VALUES ('stable-source', 'board', 'Renamable feed');
              PRAGMA user_version = 6;",
@@ -197,7 +199,7 @@ fn version_six_migration_adds_and_backfills_stable_source_ids() {
     let source_id: Option<String> = connection
         .query_row("SELECT source_id FROM tasks", [], |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 7);
+    assert_eq!(version, 8);
     assert_eq!(source_id.as_deref(), Some("stable-source"));
 }
 
@@ -284,7 +286,7 @@ fn automation_library_and_running_execution_survive_and_recover() {
     let directory = tempdir().expect("temporary directory");
     let database = directory.path().join("workonit.db");
     let store = Store::open(&database).expect("store opens");
-    let board = Board::starter("Ops");
+    let mut board = Board::starter("Ops");
     store.save_board(&board).unwrap();
     let action = CommandAction::shell("Déployer", "deploy");
     store.save_action(&action).unwrap();
@@ -309,6 +311,8 @@ fn automation_library_and_running_execution_survive_and_recover() {
         &board.columns[0].id,
     );
     store.save_source(&source).unwrap();
+    board.source_ids.push(source.id.clone());
+    store.save_board(&board).unwrap();
     let trigger = TriggerDefinition::scheduled(&source.id, ScheduleSpec::Interval { seconds: 300 });
     store.save_trigger(&trigger).unwrap();
     let running = ExecutionRecord::running("task-1", vec![automation.id.clone()], 1);

@@ -818,9 +818,33 @@ fn list_sources(
 }
 
 #[tauri::command]
+fn list_all_sources(state: State<'_, AppState>) -> Result<Vec<SourceDefinition>, String> {
+    locked_store(&state)?
+        .list_all_sources()
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn save_source(source: SourceDefinition, state: State<'_, AppState>) -> Result<(), String> {
     locked_store(&state)?
         .save_source(&source)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn delete_source(source_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let store = locked_store(&state)?;
+    for mut board in store.list_boards().map_err(|error| error.to_string())? {
+        let previous_len = board.source_ids.len();
+        board.source_ids.retain(|id| id != &source_id);
+        if board.source_ids.len() != previous_len {
+            store
+                .save_board(&board)
+                .map_err(|error| error.to_string())?;
+        }
+    }
+    store
+        .delete_source(&source_id)
         .map_err(|error| error.to_string())
 }
 
@@ -1086,19 +1110,19 @@ fn trust_imported_commands(
                 .map_err(|error| error.to_string())?;
         }
     }
-    for board in store.list_boards().map_err(|error| error.to_string())? {
-        for mut source in store
-            .list_sources(&board.id)
-            .map_err(|error| error.to_string())?
-        {
-            if source_ids.contains(&source.id) {
-                source.enabled = true;
-                source.command.enabled = true;
-                store
-                    .save_source(&source)
-                    .map_err(|error| error.to_string())?;
-            }
+    for mut source in store
+        .list_all_sources()
+        .map_err(|error| error.to_string())?
+    {
+        if source_ids.contains(&source.id) {
+            source.enabled = true;
+            source.command.enabled = true;
+            store
+                .save_source(&source)
+                .map_err(|error| error.to_string())?;
         }
+    }
+    for board in store.list_boards().map_err(|error| error.to_string())? {
         for mut automation in store
             .list_transition_automations(&board.id)
             .map_err(|error| error.to_string())?
@@ -1411,7 +1435,9 @@ pub fn run() {
             test_automation_draft,
             activate_automation_draft,
             list_sources,
+            list_all_sources,
             save_source,
+            delete_source,
             run_source_now,
             cancel_source_execution,
             inspect_source_now,

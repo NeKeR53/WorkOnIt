@@ -153,19 +153,16 @@ describe("repository web fallback", () => {
     localStorage.setItem("workonit.actions", "bad");
     expect(await repository.loadActions()).toEqual([]);
 
-    const source = repository.newSource(board);
-    expect(
-      repository.newSource({ ...board, columns: [] }).initialColumnId,
-    ).toBe("");
+    const source = repository.newSource();
+    expect(repository.newSource().initialColumnId).toBe("");
     await repository.saveSourceInRepository(source);
     await repository.saveSourceInRepository({ ...source, name: "Updated" });
-    expect(await repository.loadSources(board.id)).toHaveLength(1);
-    expect(await repository.loadSources("other")).toEqual([]);
+    expect(await repository.loadSources()).toHaveLength(1);
     const legacySource = { ...source } as Partial<typeof source>;
     delete legacySource.customFieldMapping;
     delete legacySource.allowedUpdateCustomFields;
     localStorage.setItem("workonit.sources", JSON.stringify([legacySource]));
-    expect((await repository.loadSources(board.id))[0]).toEqual(
+    expect((await repository.loadSources())[0]).toEqual(
       expect.objectContaining({
         customFieldMapping: {},
         allowedUpdateCustomFields: [],
@@ -244,6 +241,10 @@ describe("repository web fallback", () => {
       archived.tasks[0].id,
     );
     expect(archived.tasks).toHaveLength(1);
+    await repository.persistBoard({ ...archived, sourceIds: [source.id] });
+    await repository.deleteSourceInRepository(source.id);
+    expect(await repository.loadSources()).toEqual([]);
+    expect(repository.initialBoards()[0].sourceIds).toEqual([]);
     await expect(
       repository.restoreTaskInRepository("missing", "task"),
     ).rejects.toThrow("Kanban introuvable");
@@ -263,7 +264,7 @@ describe("repository desktop adapter", () => {
   it("maps every desktop operation to a Tauri command", async () => {
     const board = boardWithTasks();
     const action = repository.newCommandAction("Desktop");
-    const source = repository.newSource(board);
+    const source = repository.newSource();
     const preview: SourcePreview = { records: [], errors: [], warnings: [] };
     const draft: AutomationDraft = {
       automationId: "auto",
@@ -297,7 +298,7 @@ describe("repository desktop adapter", () => {
       )
         return command === "restore_backup" ? [board] : board;
       if (command === "list_actions") return [action];
-      if (command === "list_sources") return [source];
+      if (command === "list_all_sources") return [source];
       if (command === "preview_source") return preview;
       if (command === "list_automation_drafts") return [draft];
       if (command === "preview_automation_draft") return [];
@@ -355,7 +356,7 @@ describe("repository desktop adapter", () => {
     );
     expect(await repository.loadActions()).toEqual([action]);
     await repository.saveActionInRepository(action);
-    expect(await repository.loadSources(board.id)).toEqual([source]);
+    expect(await repository.loadSources()).toEqual([source]);
     await repository.saveSourceInRepository(source);
     await repository.runSourceNow(source.id, true, true);
     await repository.inspectSourceNow(source.id);
@@ -397,6 +398,10 @@ describe("repository desktop adapter", () => {
       includeTriggers: false,
     });
     await repository.takePendingImports();
+    await repository.deleteSourceInRepository(source.id);
+    expect(invoke).toHaveBeenCalledWith("delete_source", {
+      sourceId: source.id,
+    });
     expect(invoke).toHaveBeenCalledWith(
       "move_task",
       expect.objectContaining({ confirmed: true }),
@@ -417,6 +422,35 @@ describe("repository desktop adapter", () => {
       value: "Windows",
     });
     expect(repository.newCommandAction().runner).toBe("powershell");
+    expect(repository.shellRunnerOptions()).toEqual([
+      "powershell",
+      "pwsh",
+      "cmd.exe",
+      "C:\\Program Files\\Git\\bin\\bash.exe",
+    ]);
     if (descriptor) Object.defineProperty(navigator, "userAgent", descriptor);
+    else delete (navigator as { userAgent?: string }).userAgent;
+  });
+
+  it("reuses the last selected runner for a new action", () => {
+    repository.rememberCommandRunner("/opt/homebrew/bin/fish");
+    expect(repository.newCommandAction().runner).toBe(
+      "/opt/homebrew/bin/fish",
+    );
+  });
+
+  it("offers all three macOS shells", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(navigator, "userAgent");
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Macintosh",
+    });
+    expect(repository.shellRunnerOptions()).toEqual([
+      "/bin/zsh",
+      "/bin/bash",
+      "/bin/sh",
+    ]);
+    if (descriptor) Object.defineProperty(navigator, "userAgent", descriptor);
+    else delete (navigator as { userAgent?: string }).userAgent;
   });
 });

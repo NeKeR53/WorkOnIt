@@ -420,6 +420,9 @@ describe("WorkOnIt desktop flows", () => {
     expect(mocks.cancelTaskExecution).toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Sources" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Desktop source JSON" }),
+    );
     await screen.findByDisplayValue("Desktop source");
     await user.click(
       screen.getByRole("button", { name: "Exécuter et inspecter" }),
@@ -570,6 +573,7 @@ describe("WorkOnIt desktop flows", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Automatisations" }));
+    await user.click(screen.getByRole("button", { name: /Desktop action/ }));
     await screen.findByDisplayValue("Desktop action");
     expect(screen.getByText(/active \+ brouillon/)).toBeVisible();
     await user.click(
@@ -644,7 +648,7 @@ describe("WorkOnIt desktop flows", () => {
     save.mockResolvedValue("export.workonit");
     const user = userEvent.setup();
     render(<App />);
-    const settings = await screen.findByRole("dialog", {
+    const settings = await screen.findByRole("region", {
       name: "Réglages WorkOnIt",
     });
     const importPreview = (
@@ -775,11 +779,9 @@ describe("WorkOnIt desktop flows", () => {
     ).toBeVisible();
     importListener?.({ payload: ["event.workonit"] });
     expect(
-      await screen.findByRole("dialog", { name: "Réglages WorkOnIt" }),
+      await screen.findByRole("region", { name: "Réglages WorkOnIt" }),
     ).toBeVisible();
-    await user.click(
-      screen.getByRole("button", { name: "Fermer les réglages" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Kanbans" }));
     importListener?.({ payload: [] });
     unmount();
   });

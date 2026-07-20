@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>WorkOnIt — Option 4 · Atelier</title>
+<style>
+/* ===== OPTION 4 — ATELIER =====================================
+   Clair chaleureux mais pas crème : fond gris-vert doux, encre
+   charbon, accent forêt profond. Cartes posées comme des fiches
+   cartonnées, ombres portées franches (offset dur, pas de blur).
+   Chaque colonne a une vraie identité couleur en en-tête plein. */
+:root{
+  --bg:#eef0ec; --ink:#20241f; --gray:#5c6357; --faint:#8b9184;
+  --card:#fbfbf9; --line:#d8dcd2; --shadow:#c4c9bc;
+  --forest:#2f5d3f; --clay:#b4552d; --slate:#43586d; --gold:#8a6d1f;
+  font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-size:13.5px;line-height:1.5;height:100vh;display:flex;overflow:hidden}
+.side{width:220px;padding:18px 16px;display:flex;flex-direction:column;gap:2px;border-right:2px solid var(--ink)}
+.brand{font-size:19px;font-weight:800;letter-spacing:-.4px;margin-bottom:18px}
+.brand span{color:var(--forest)}
+.nav a{display:block;padding:7px 10px;color:var(--gray);text-decoration:none;font-weight:600;font-size:13.5px;border-radius:0;border-left:3px solid transparent}
+.nav a:hover{color:var(--ink)}
+.nav a.on{color:var(--ink);border-left-color:var(--forest);background:#e4e7df}
+.sub{margin:4px 0 10px 13px;border-left:1px solid var(--line);padding-left:10px}
+.sub a{font-weight:500;font-size:12.5px;padding:4px 8px;border-left:0}
+.sub a.cur{color:var(--forest);font-weight:700}
+.foot{margin-top:auto}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{padding:16px 24px 0;display:flex;align-items:center;gap:14px}
+.top h1{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.top .n{color:var(--faint);font-weight:600;font-size:13px}
+.tools{margin-left:auto;display:flex;gap:10px;align-items:center}
+.search{background:var(--card);border:2px solid var(--ink);padding:7px 12px;width:220px;font:inherit;font-size:13px;outline:none}
+.search::placeholder{color:var(--faint)}
+.btn{border:2px solid var(--ink);background:var(--card);padding:7px 16px;font:700 13px inherit;font-family:inherit;cursor:pointer;box-shadow:3px 3px 0 var(--shadow)}
+.btn:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--shadow)}
+.btn.fill{background:var(--forest);border-color:var(--forest);color:#fff;box-shadow:3px 3px 0 #a9b8a5}
+.board{flex:1;display:flex;gap:18px;padding:18px 24px 24px;overflow-x:auto}
+.col{width:312px;flex:0 0 312px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.colhead{color:#fff;padding:9px 14px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;letter-spacing:.3px;box-shadow:3px 3px 0 var(--shadow)}
+.c1 .colhead{background:var(--slate)} .c2 .colhead{background:var(--clay)} .c3 .colhead{background:var(--forest)}
+.count{background:rgba(255,255,255,.25);padding:0 8px;font-size:12px;font-weight:700}
+.colhead .add{margin-left:auto;cursor:pointer;font-size:16px;opacity:.8}
+.colhead .add:hover{opacity:1}
+.cards{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:4px}
+.card{background:var(--card);border:1.5px solid var(--ink);padding:12px 14px;display:flex;flex-direction:column;gap:7px;cursor:pointer;box-shadow:3px 3px 0 var(--shadow)}
+.card:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--shadow)}
+.card.sel{border-width:2.5px;box-shadow:4px 4px 0 var(--forest)}
+.tt{font-weight:700;font-size:14px;line-height:1.35}
+.desc{color:var(--gray);font-size:12.5px}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border:1.5px solid var(--ink);background:#fff}
+.pr{font-size:11px;font-weight:800;padding:2px 8px;color:#fff}
+.pr.h{background:var(--clay)} .pr.m{background:var(--slate)} .pr.l{background:var(--faint)}
+.st{font-size:11px;font-weight:800;padding:2px 8px;border:1.5px solid currentColor}
+.st.run{color:var(--slate);background:#e6ecf3}
+.st.err{color:var(--clay);background:#f7e5dc}
+.st.ok{color:var(--forest);background:#e0ecdf}
+.due{margin-left:auto;font-size:11.5px;color:var(--faint);font-weight:600}
+.wip{border:1.5px dashed var(--gold);color:var(--gold);background:#f4eeda;padding:7px 11px;font-size:12px;font-weight:700}
+</style>
+</head>
+<body>
+<aside class="side">
+  <div class="brand">Work<span>OnIt</span></div>
+  <nav class="nav">
+    <a class="on" href="#">Kanbans</a>
+    <div class="sub">
+      <a class="cur" href="#">Projet Alpha</a>
+      <a href="#">+ Nouveau kanban</a>
+    </div>
+    <a href="#">Sources</a>
+    <a href="#">Automatisations</a>
+    <a href="#">Historique</a>
+  </nav>
+  <nav class="nav foot">
+    <a href="#">Archives</a>
+    <a href="#">Réglages</a>
+    <a href="#">Thème clair ◐</a>
+  </nav>
+</aside>
+<div class="main">
+  <header class="top">
+    <h1>Projet Alpha</h1><span class="n">8 tâches</span>
+    <div class="tools">
+      <input class="search" placeholder="Rechercher…  ⌘K">
+      <button class="btn">Configurer</button>
+      <button class="btn fill">+ Nouvelle tâche</button>
+    </div>
+  </header>
+  <main class="board">
+    <section class="col c1">
+      <div class="colhead">À faire <span class="count">3</span><span class="add">+</span></div>
+      <div class="cards">
+        <article class="card sel">
+          <span class="tt">Corriger le bug d'export CSV</span>
+          <span class="desc">Le séparateur point-virgule casse les colonnes dans Excel FR.</span>
+          <div class="meta"><span class="pr h">HAUTE</span><span class="tag">bug</span><span class="tag">export</span><span class="due">18 juil.</span></div>
+        </article>
+        <article class="card">
+          <span class="tt">Rédiger la doc d'installation</span>
+          <div class="meta"><span class="pr m">NORMALE</span><span class="tag">doc</span></div>
+        </article>
+        <article class="card">
+          <span class="tt">Migrer la CI vers les runners ARM</span>
+          <div class="meta"><span class="pr l">BASSE</span><span class="tag">infra</span><span class="due">1 août</span></div>
+        </article>
+      </div>
+    </section>
+    <section class="col c2">
+      <div class="colhead">En cours <span class="count">3</span><span class="add">+</span></div>
+      <div class="wip">⚠ Limite conseillée atteinte (3/2)</div>
+      <div class="cards">
+        <article class="card">
+          <span class="tt">Implémenter le drag &amp; drop clavier</span>
+          <div class="meta"><span class="pr h">HAUTE</span><span class="tag">a11y</span><span class="st run">EN COURS 2/4</span></div>
+        </article>
+        <article class="card">
+          <span class="tt">Nettoyer les tokens de thème</span>
+          <span class="desc">Les variantes sombres divergent du spec.</span>
+          <div class="meta"><span class="tag">design</span><span class="st err">ÉCHEC</span></div>
+        </article>
+        <article class="card">
+          <span class="tt">Optimiser le chargement des colonnes</span>
+          <div class="meta"><span class="pr m">NORMALE</span><span class="tag">perf</span></div>
+        </article>
+      </div>
+    </section>
+    <section class="col c3">
+      <div class="colhead">Terminé <span class="count">2</span><span class="add">+</span></div>
+      <div class="cards">
+        <article class="card">
+          <span class="tt">Publier la release 0.1.0</span>
+          <div class="meta"><span class="tag">release</span><span class="st ok">SUCCÈS</span></div>
+        </article>
+        <article class="card">
+          <span class="tt">Configurer l'auto-update</span>
+          <div class="meta"><span class="tag">infra</span></div>
+        </article>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

@@ -157,6 +157,8 @@ pub struct Task {
 pub struct Board {
     pub id: String,
     pub name: String,
+    #[serde(default)]
+    pub source_ids: Vec<String>,
     pub columns: Vec<Column>,
     pub tasks: Vec<Task>,
     pub custom_fields: Vec<CustomFieldDefinition>,
@@ -210,6 +212,7 @@ impl Board {
         Self {
             id: Uuid::new_v4().to_string(),
             name: name.into(),
+            source_ids: Vec::new(),
             columns: Vec::new(),
             tasks: Vec::new(),
             custom_fields: Vec::new(),
