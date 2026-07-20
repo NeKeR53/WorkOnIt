@@ -1336,16 +1336,15 @@ fn database_path(app: &tauri::AppHandle) -> Result<PathBuf, Box<dyn std::error::
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let autostart = tauri_plugin_autostart::Builder::new().app_name("WorkOnIt");
+    #[cfg(target_os = "macos")]
+    let autostart = autostart.macos_launcher(tauri_plugin_autostart::MacosLauncher::LaunchAgent);
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(
-            tauri_plugin_autostart::Builder::new()
-                .app_name("WorkOnIt")
-                .macos_launcher(tauri_plugin_autostart::MacosLauncher::LaunchAgent)
-                .build(),
-        )
+        .plugin(autostart.build())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();

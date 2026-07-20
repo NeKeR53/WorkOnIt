@@ -946,7 +946,7 @@ describe("WorkOnIt main flow", () => {
           id: "action-1",
           name: "Publish",
           script: "echo ok",
-          runner: "/bin/zsh",
+          runner: "/custom/runner",
           loadProfile: false,
           timeoutSeconds: 300,
           acceptedExitCodes: [0],
@@ -985,6 +985,9 @@ describe("WorkOnIt main flow", () => {
     await user.type(screen.getByLabelText("Nom de l’action"), "Publish edited");
     const runner = screen.getByLabelText("Runner");
     expect(runner).toBeInstanceOf(HTMLSelectElement);
+    expect(
+      within(runner).getByRole("option", { name: "/custom/runner" }),
+    ).toBeVisible();
     for (const option of shellRunnerOptions()) {
       expect(
         within(runner).getByRole("option", { name: option }),
