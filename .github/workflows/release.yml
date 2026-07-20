@@ -15,9 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: ubuntu-22.04
-            label: linux-x86_64
-            args: ""
           - platform: windows-latest
             label: windows-x86_64
             args: ""

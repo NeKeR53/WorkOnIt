@@ -38,6 +38,11 @@ dépendances non maintenues héritées du backend Tauri/GTK3, sans version corri
 et non des vulnérabilités exploitables connues. Toute nouvelle vulnérabilité ou
 tout avis disposant d'une mise à niveau sûre fait échouer l'audit automatisé.
 
+Les builds Linux héritent aussi de `glib 0.18` via Tauri/GTK3, concerné par
+`GHSA-wrw7-89jp-8q8g`. Le correctif exige `glib 0.20`, incompatible avec cette
+pile GTK3. WorkOnIt ne publie donc aucun artefact Linux tant que la dépendance
+amont n'offre pas de chemin corrigé. Windows et macOS ne lient pas ce backend.
+
 ## Périmètre
 
 Sont particulièrement utiles: contournement de confirmation, exposition de
