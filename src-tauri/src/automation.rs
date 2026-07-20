@@ -817,9 +817,14 @@ fn default_runner() -> &'static str {
     "powershell"
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 fn default_runner() -> &'static str {
     "/bin/zsh"
+}
+
+#[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
+fn default_runner() -> &'static str {
+    "/bin/bash"
 }
 
 #[cfg(test)]
