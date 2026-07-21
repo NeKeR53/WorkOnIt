@@ -37,6 +37,17 @@ Les versions publiées et leurs artefacts sont disponibles dans
 [GitHub Releases](https://github.com/NeKeR53/WorkOnIt/releases). Tant qu'aucune
 version stable n'est publiée, construisez l'application depuis les sources.
 
+Chaque tag `v*` construit une release brouillon contenant :
+
+- un installateur `.exe` pour Windows x64 ;
+- une image `.dmg` pour les Mac Apple Silicon ;
+- une image `.dmg` pour les Mac Intel ;
+- les sommes SHA-256 correspondantes.
+
+Ces premiers builds ne sont pas signés. Windows SmartScreen et macOS Gatekeeper
+peuvent donc afficher un avertissement. GitHub publie la release uniquement
+après la réussite des trois builds et de leurs sommes de contrôle.
+
 ### Prérequis de développement
 
 - Node.js 22 ou version ultérieure ;
