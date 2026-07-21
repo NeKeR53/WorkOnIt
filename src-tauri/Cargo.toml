@@ -26,7 +26,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
-cron = "0.15"
+cron = "0.17"
 dirs = "6"
 encoding_rs = "0.8"
 keyring = { version = "3", features = ["apple-native", "windows-native"] }
