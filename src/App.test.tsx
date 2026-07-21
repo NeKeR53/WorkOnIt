@@ -49,6 +49,7 @@ function richBoard(): Board {
     ],
   });
   const second = createTask("Beta task", board.columns[0].id, 1);
+  second.priority = "Normale";
   second.executionStatus = { running: { step: 1, total: 2 } };
   const archived = createTask("Archived task", board.columns[2].id, 0);
   archived.archived = true;
@@ -202,6 +203,12 @@ describe("WorkOnIt main flow", () => {
     await user.click(
       screen.getByRole("button", { name: "Importer 1 tâche(s)" }),
     );
+    await user.click(
+      screen.getByRole("button", { name: "Retour aux sources" }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Nouvelle source" }),
+    ).toBeVisible();
   });
 
   it("deletes a source from the source list", async () => {
@@ -222,9 +229,9 @@ describe("WorkOnIt main flow", () => {
     expect(
       screen.queryByRole("button", { name: /Source à supprimer JSON/ }),
     ).not.toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem("workonit.boards")!)[0].sourceIds).toEqual(
-      [],
-    );
+    expect(
+      JSON.parse(localStorage.getItem("workonit.boards")!)[0].sourceIds,
+    ).toEqual([]);
   });
 
   it("blocks forbidden and hard-WIP drag transitions with explanations", async () => {
@@ -432,9 +439,10 @@ describe("WorkOnIt main flow", () => {
       await user.click(
         within(palette).getByRole("button", { name: new RegExp(query) }),
       );
-      expect(
-        screen.getByRole("button", { name: expected }),
-      ).toHaveAttribute("aria-current", "page");
+      expect(screen.getByRole("button", { name: expected })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
     }
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     const palette = screen.getByRole("dialog", { name: "Palette globale" });
@@ -539,7 +547,8 @@ describe("WorkOnIt main flow", () => {
 
   it("sorts priorities when the comparison fallback is on the second task", async () => {
     const board = richBoard();
-    board.tasks = [board.tasks[1], board.tasks[0]];
+    const unprioritized = createTask("No priority", board.columns[0].id, 2);
+    board.tasks = [board.tasks[0], unprioritized, board.tasks[1]];
     seed(board);
     const user = userEvent.setup();
     render(<App />);
@@ -937,7 +946,7 @@ describe("WorkOnIt main flow", () => {
           id: "action-1",
           name: "Publish",
           script: "echo ok",
-          runner: "/bin/zsh",
+          runner: "/custom/runner",
           loadProfile: false,
           timeoutSeconds: 300,
           acceptedExitCodes: [0],
@@ -976,8 +985,13 @@ describe("WorkOnIt main flow", () => {
     await user.type(screen.getByLabelText("Nom de l’action"), "Publish edited");
     const runner = screen.getByLabelText("Runner");
     expect(runner).toBeInstanceOf(HTMLSelectElement);
+    expect(
+      within(runner).getByRole("option", { name: "/custom/runner" }),
+    ).toBeVisible();
     for (const option of shellRunnerOptions()) {
-      expect(within(runner).getByRole("option", { name: option })).toBeVisible();
+      expect(
+        within(runner).getByRole("option", { name: option }),
+      ).toBeVisible();
     }
     await user.selectOptions(runner, shellRunnerOptions()[1]);
     await user.clear(screen.getByLabelText("Commande shell"));

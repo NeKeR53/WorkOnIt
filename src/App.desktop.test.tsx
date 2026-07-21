@@ -427,9 +427,16 @@ describe("WorkOnIt desktop flows", () => {
     await user.click(
       screen.getByRole("button", { name: "Exécuter et inspecter" }),
     );
+    mocks.cancelSourceExecution.mockRejectedValueOnce(
+      new Error("cancel source failed"),
+    );
     await user.click(
       screen.getByRole("button", { name: "Arrêter l’exécution active" }),
     );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "cancel source failed",
+    );
+    await user.click(screen.getByRole("button", { name: "Fermer" }));
     expect(mocks.cancelSourceExecution).toHaveBeenCalledWith("source");
     resolveInspection({
       preview: {

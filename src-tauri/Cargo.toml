@@ -4,6 +4,13 @@ version = "0.1.0"
 description = "Local automation kanban"
 authors = ["WorkOnIt contributors"]
 edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/NeKeR53/WorkOnIt"
+homepage = "https://github.com/NeKeR53/WorkOnIt"
+readme = "../README.md"
+keywords = ["automation", "desktop", "kanban", "local-first", "tauri"]
+categories = ["gui"]
+publish = false
 
 [lib]
 name = "workonit_lib"
@@ -23,6 +30,7 @@ cron = "0.15"
 dirs = "6"
 encoding_rs = "0.8"
 keyring = { version = "3", features = ["apple-native", "windows-native"] }
+libc = "0.2"
 regex = "1"
 rusqlite = { version = "0.32", features = ["backup", "bundled"] }
 serde = { version = "1", features = ["derive"] }

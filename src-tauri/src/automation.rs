@@ -639,19 +639,29 @@ fn configure_process_group(command: &mut Command) {
 fn kill_process_tree(child: &mut std::process::Child) {
     use wait_timeout::ChildExt;
 
-    let process_group = format!("-{}", child.id());
-    let _ = Command::new("kill")
-        .args(["-TERM", &process_group])
-        .status();
+    let process_group = child.id() as libc::pid_t;
+    // SAFETY: getpgid only reads process metadata. We signal a group only
+    // after confirming the child is its leader, so a failed setpgid cannot
+    // target the parent application's process group.
+    let isolated_group = unsafe { libc::getpgid(process_group) == process_group };
+    if isolated_group {
+        // SAFETY: the verified group belongs to the spawned child.
+        let _ = unsafe { libc::killpg(process_group, libc::SIGTERM) };
+    } else {
+        let _ = child.kill();
+    }
     if child
         .wait_timeout(std::time::Duration::from_millis(500))
         .ok()
         .flatten()
         .is_none()
     {
-        let _ = Command::new("kill")
-            .args(["-KILL", &process_group])
-            .status();
+        if isolated_group {
+            // SAFETY: the verified group still identifies the child tree.
+            let _ = unsafe { libc::killpg(process_group, libc::SIGKILL) };
+        } else {
+            let _ = child.kill();
+        }
     }
     let _ = child.wait();
 }
@@ -817,9 +827,14 @@ fn default_runner() -> &'static str {
     "powershell"
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 fn default_runner() -> &'static str {
     "/bin/zsh"
+}
+
+#[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
+fn default_runner() -> &'static str {
+    "/bin/bash"
 }
 
 #[cfg(test)]

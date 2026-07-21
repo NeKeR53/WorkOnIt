@@ -276,12 +276,7 @@ fn visual_conditions_select_fields_origin_os_and_skip_non_matches() {
             origin: TransitionOrigin::User,
         },
         ActionCondition::OperatingSystem {
-            name: if cfg!(target_os = "windows") {
-                "windows"
-            } else {
-                "macOs"
-            }
-            .into(),
+            name: std::env::consts::OS.into(),
         },
     ];
     let mut steps = Vec::new();

@@ -1,0 +1,50 @@
+name: Bug
+description: Signaler un comportement reproductible
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Retirez secrets, données personnelles et bases locales.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 0.1.0 ou commit
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Système
+      options: [macOS, Windows, Linux]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes de reproduction
+      placeholder: Décrivez une séquence minimale.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Résultat attendu
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Résultat observé
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Vérifications
+      options:
+        - label: J'ai recherché les issues existantes.
+          required: true
+        - label: Ce rapport ne contient aucun secret ni donnée privée.
+          required: true

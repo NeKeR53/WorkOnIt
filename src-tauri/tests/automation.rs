@@ -115,8 +115,10 @@ fn action_selects_platform_variant_and_validates_stdout() {
         operating_system: OperatingSystem::current(),
         runner: if cfg!(target_os = "windows") {
             "cmd"
-        } else {
+        } else if cfg!(target_os = "macos") {
             "/bin/zsh"
+        } else {
+            "/bin/bash"
         }
         .into(),
         script: if cfg!(target_os = "windows") {

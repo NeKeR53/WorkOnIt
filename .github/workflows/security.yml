@@ -1,0 +1,50 @@
+name: Dependency security
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - package-lock.json
+      - src-tauri/Cargo.toml
+      - src-tauri/Cargo.lock
+      - deny.toml
+      - .github/workflows/security.yml
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+      - src-tauri/Cargo.toml
+      - src-tauri/Cargo.lock
+      - deny.toml
+      - .github/workflows/security.yml
+  schedule:
+    - cron: "20 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  checks: write
+
+jobs:
+  cargo-audit:
+    name: Cargo advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          working-directory: src-tauri
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0411,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0414,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0417,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2025-0075,RUSTSEC-2025-0080,RUSTSEC-2025-0081,RUSTSEC-2025-0098,RUSTSEC-2025-0100
+
+  cargo-deny:
+    name: Cargo licenses and sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
+        with:
+          command: check
+          manifest-path: src-tauri/Cargo.toml

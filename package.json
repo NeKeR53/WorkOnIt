@@ -2,11 +2,32 @@
   "name": "workonit",
   "private": true,
   "version": "0.1.0",
+  "description": "Kanban desktop local avec automatisations, construit avec Tauri, Rust et React.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/NeKeR53/WorkOnIt#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NeKeR53/WorkOnIt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NeKeR53/WorkOnIt/issues"
+  },
+  "keywords": [
+    "automation",
+    "desktop",
+    "kanban",
+    "local-first",
+    "tauri"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "coverage": "vitest run --coverage",
+    "licenses:check": "node scripts/check-js-licenses.mjs",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -20,7 +41,6 @@
     "@tauri-apps/plugin-dialog": "^2.4.0",
     "@tauri-apps/plugin-notification": "^2.3.3",
     "@tauri-apps/plugin-opener": "^2.5.0",
-    "@tauri-apps/plugin-shell": "^2.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "i18next": "^26.3.6",
