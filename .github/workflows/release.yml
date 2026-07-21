@@ -7,38 +7,46 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  publish:
+  build:
     name: Build ${{ matrix.label }}
     runs-on: ${{ matrix.platform }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: windows-latest
             label: windows-x86_64
-            args: ""
+            target: ""
+            args: --bundles nsis
+            bundle-directory: src-tauri/target/release/bundle/nsis
           - platform: macos-latest
             label: macos-aarch64
-            args: --target aarch64-apple-darwin
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin --bundles dmg
+            bundle-directory: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg
           - platform: macos-latest
             label: macos-x86_64
-            args: --target x86_64-apple-darwin
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin --bundles dmg
+            bundle-directory: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
           cache: npm
+      - name: Verify release version
+        run: node scripts/check-release-version.mjs "${{ github.ref_name }}"
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
         with:
           toolchain: stable
-          targets: ${{ matrix.platform == 'macos-latest' && (matrix.label == 'macos-aarch64' && 'aarch64-apple-darwin' || 'x86_64-apple-darwin') || '' }}
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: src-tauri
@@ -52,13 +60,35 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: WorkOnIt ${{ github.ref_name }}
-          releaseBody: See CHANGELOG.md for release notes.
+          releaseBody: |
+            Unsigned installers / Installateurs non signés : `.exe` for/pour Windows x64 and/et `.dmg` for/pour macOS Intel or/ou Apple Silicon.
+            See/Consultez `CHANGELOG.md` for/pour the/les release notes/notes de version.
           releaseDraft: true
           prerelease: false
+          generateReleaseNotes: true
           args: ${{ matrix.args }}
       - name: Generate checksums
-        run: node scripts/generate-checksums.mjs src-tauri/target SHA256SUMS-${{ matrix.label }}.txt
+        run: node scripts/generate-checksums.mjs "${{ matrix.bundle-directory }}" SHA256SUMS-${{ matrix.label }}.txt
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: workonit-${{ matrix.label }}
+          path: |
+            ${{ matrix.bundle-directory }}
+            SHA256SUMS-${{ matrix.label }}.txt
+          if-no-files-found: error
+          compression-level: 0
       - name: Upload checksums
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${{ github.ref_name }}" "SHA256SUMS-${{ matrix.label }}.txt" --clobber
+
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish completed release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false --latest
