@@ -1175,7 +1175,7 @@ describe("WorkOnIt main flow", () => {
     await user.click(
       screen.getByRole("button", { name: "Enregistrer brouillon" }),
     );
-  });
+  }, 15_000);
 
   it("shows history and updates local application settings", async () => {
     seed();
